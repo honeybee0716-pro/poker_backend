@@ -338,6 +338,23 @@ function onRequestSpectateRooms({ playerId, connectionId, socketKey, roomId }) {
 }
 
 
+// // Player selected room to play in
+// function onPlayerSelectRoom({ connectionId, socketKey, roomId, amount }) {
+//   if (isValidInput({ connectionId, socketKey, roomId }, true)) {
+//     if ((rooms[roomId].players.length + rooms[roomId].playersToAppend.length) < config.games.holdEm.holdEmGames[rooms[roomId].holdemType].max_seats) {
+//       rooms[roomId].spectators = rooms[roomId].spectators.filter((player) => player.playerDatabaseId !== players[connectionId].playerDatabaseId);
+//       const exsits = rooms[roomId].playersToAppend.some((player) => player.playerId === players[connectionId].playerId);
+//       if (exsits) return;
+//       players[connectionId].connection.selectedRoomId = roomId; // Also set room id into connection object
+//       players[connectionId].selectedRoomId = roomId;
+//       players[connectionId].playerMoney = amount;
+//       rooms[roomId].playersToAppend.push(players[connectionId]);
+//       logger.log(players[connectionId].playerName + " selected room " + roomId);
+//       rooms[roomId].triggerNewGame();
+//     }
+//   }
+// }
+
 // Player selected room to play in
 function onPlayerSelectRoom({ connectionId, socketKey, roomId, userName,amount }) {
   if (isValidInput({ connectionId, socketKey, roomId }, true)) {
@@ -368,10 +385,25 @@ function onPlayerSelectRoom({ connectionId, socketKey, roomId, userName,amount }
       });
       logger.log(players[connectionId].playerName + " selected room " + roomId);
       rooms[roomId].triggerNewGame();
+      dbUtils.SetbalancePromise(sequelizeObjects, userName, amount).then(result => {
+        if (players[connectionId].connection !== null) {
+          responseArray.key = "SetbalanceResult";
+          responseArray.data = result;
+          // loginedUsers = [...loginedUsers, result];
+          players[connectionId].connection.send(JSON.stringify(responseArray));
+          cleanResponseArray();
+        }
+      }).catch(() => {
+        if (players[connectionId].connection !== null) {
+          responseArray.key = "SetbalanceResult";
+          responseArray.data = { error: "Database Error" };
+          players[connectionId].connection.send(JSON.stringify(responseArray));
+          cleanResponseArray();
+        }
+      });
     }
   }
 }
-
 
 // Push spectator on selected room
 function onPlayerSelectSpectateRoom({ connectionId, socketKey, roomId }) {
