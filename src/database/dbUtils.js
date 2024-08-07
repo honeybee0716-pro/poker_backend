@@ -209,6 +209,7 @@ exports.LoginPromise = LoginPromise;
  * @param {Object} sequelizeObjects
  * @param {String} username
  * @returns {Promise<any>}
+ * @constructor
  */
 function LogoutPromise(sequelizeObjects, username) {
   return new Promise(function (resolve, reject) {
@@ -236,6 +237,44 @@ function LogoutPromise(sequelizeObjects, username) {
 }
 
 exports.LogoutPromise = LogoutPromise;
+
+
+/**
+ * Updates user money in the database
+ * @param {Object} sequelizeObjects
+ * @param {String} username
+ * @param {Number} amount
+ * @returns {Promise<any>}
+ * @constructor
+ */
+function SetbalancePromise(sequelizeObjects, username, amount) {
+  return new Promise(function (resolve, reject) {
+    sequelizeObjects.User.findOne({
+      where: { [Op.or]: [{ name: username }, { email: username }] },
+    })
+      .then((user) => {
+        if (!user) {
+          resolve({ result: false, error: 'User not found' });
+        } else {
+          const currentAmount = user.money;
+          user
+            .update({ money: currentAmount - amount })
+            .then(() => {
+              resolve({ result: true });
+            })
+            .catch((error) => {
+              reject(error);
+            });
+        }
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
+}
+exports.SetbalancePromise = SetbalancePromise;
+
+
 /**
  * Gets user parameters to user object
  * @param {Object} sequelizeObjects
