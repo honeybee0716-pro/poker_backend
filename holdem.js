@@ -339,7 +339,7 @@ function onRequestSpectateRooms({ playerId, connectionId, socketKey, roomId }) {
 
 
 // Player selected room to play in
-function onPlayerSelectRoom({ connectionId, socketKey, roomId, amount }) {
+function onPlayerSelectRoom({ connectionId, socketKey, roomId, userName,amount }) {
   if (isValidInput({ connectionId, socketKey, roomId }, true)) {
     if ((rooms[roomId].players.length + rooms[roomId].playersToAppend.length) < config.games.holdEm.holdEmGames[rooms[roomId].holdemType].max_seats) {
       rooms[roomId].spectators = rooms[roomId].spectators.filter((player) => player.playerDatabaseId !== players[connectionId].playerDatabaseId);
@@ -349,6 +349,23 @@ function onPlayerSelectRoom({ connectionId, socketKey, roomId, amount }) {
       players[connectionId].selectedRoomId = roomId;
       players[connectionId].playerMoney = amount;
       rooms[roomId].playersToAppend.push(players[connectionId]);
+
+      dbUtils.SetbalancePromise(sequelizeObjects, userName, amount).then(result => {
+        if (players[connectionId].connection !== null) {
+          responseArray.key = "SetbalanceResult";
+          responseArray.data = result;
+          // loginedUsers = [...loginedUsers, result];
+          players[connectionId].connection.send(JSON.stringify(responseArray));
+          cleanResponseArray();
+        }
+      }).catch(() => {
+        if (players[connectionId].connection !== null) {
+          responseArray.key = "SetbalanceResult";
+          responseArray.data = { error: "Database Error" };
+          players[connectionId].connection.send(JSON.stringify(responseArray));
+          cleanResponseArray();
+        }
+      });
       logger.log(players[connectionId].playerName + " selected room " + roomId);
       rooms[roomId].triggerNewGame();
     }
