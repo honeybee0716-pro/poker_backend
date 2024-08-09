@@ -174,26 +174,26 @@ function LoginPromise(sequelizeObjects, username, password, type) {
             result: false,
             error: `Your account was blocked. Please contact to support team`,
           });
-        if (user.login_status)
-        resolve({
-          result: false,
-          error: `Your account is already logged in.`,
-          });
+        // if (user.login_status)
+        // resolve({
+        //   result: false,
+        //   error: `Your account is already logged in.`,
+        //   });
         if (type === "player" && user.role.type !== "player")
           resolve({ result: false, error: `Agents can't login` });
         if (type === "admin" && user.role.type === "player")
           resolve({ result: false, error: `Players can't login` });
         const check = validPassword(password, user.password);
         if (!check) resolve({ result: false, error: "Password is not match" });
-        
-        user
-            .update({ login_status: true })
-            .then(() => {
-              resolve({ result: true, user });
-            })
-            .catch((error) => {
-              reject(error);
-            });
+        resolve({ result: true, user });
+        // user
+        //     .update({ login_status: true })
+        //     .then(() => {
+        //       resolve({ result: true, user });
+        //     })
+        //     .catch((error) => {
+        //       reject(error);
+        //     });
 
       } else {
         resolve({ result: false, error: "User not found" });

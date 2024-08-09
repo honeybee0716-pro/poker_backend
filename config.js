@@ -26,7 +26,8 @@ exports = module.exports = {
       bot: {
         giveRealNames: true, // true => random from assets/names.txt, false => Bot<numbers>
         startMoney: 10000,
-        turnTimes: [1000, 1500, 2000, 2500, 3000],
+        // turnTimes: [1000, 1500, 2000, 2500, 3000],
+        turnTimes: [500, 750, 1000, 1250, 1500],
         minMoney: [
           50,     // Low bet game
           200,    // Medium bet game
