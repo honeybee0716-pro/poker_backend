@@ -366,23 +366,7 @@ function onPlayerSelectRoom({ connectionId, socketKey, roomId, userName,amount }
       players[connectionId].selectedRoomId = roomId;
       players[connectionId].playerMoney = amount;
       rooms[roomId].playersToAppend.push(players[connectionId]);
-
-      dbUtils.SetbalancePromise(sequelizeObjects, userName, amount).then(result => {
-        if (players[connectionId].connection !== null) {
-          responseArray.key = "SetbalanceResult";
-          responseArray.data = result;
-          // loginedUsers = [...loginedUsers, result];
-          players[connectionId].connection.send(JSON.stringify(responseArray));
-          cleanResponseArray();
-        }
-      }).catch(() => {
-        if (players[connectionId].connection !== null) {
-          responseArray.key = "SetbalanceResult";
-          responseArray.data = { error: "Database Error" };
-          players[connectionId].connection.send(JSON.stringify(responseArray));
-          cleanResponseArray();
-        }
-      });
+      
       logger.log(players[connectionId].playerName + " selected room " + roomId);
       rooms[roomId].triggerNewGame();
       dbUtils.SetbalancePromise(sequelizeObjects, userName, amount).then(result => {
