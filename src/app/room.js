@@ -889,7 +889,7 @@ Room.prototype.roundResultsMiddleOfTheGame = function () {
       this.splitFee(this.players[winnerPlayer].playerDatabaseId, this.totalPot);
     this.currentStatusText =
       this.players[winnerPlayer].playerName + " is only standing player!";
-    this.currentTurnText = "";
+    this.currentTurnText = "0";
     this.isResultsCall = true;
     this.updateLoggedInPlayerDatabaseStatistics(
       [winnerPlayer],
