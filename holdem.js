@@ -125,6 +125,10 @@ function messageHandler(input) {
       // noinspection JSUnresolvedVariable
       onRequestRooms(input);
       break;
+    case "leaveRoom":
+      // noinspection JSUnresolvedVariable
+      onRequestLeaveRoom(input);
+      break;
     case "selectRoom":
       onPlayerSelectRoom(input);
       getRoomParameters(input.connectionId, input.socketKey, input.roomId);
@@ -754,6 +758,29 @@ function userLogout(param) {
     }).catch(() => {
       if (players[connectionId].connection !== null) {
         responseArray.key = "logoutResult";
+        responseArray.data = { error: "Database Error" };
+        players[connectionId].connection.send(JSON.stringify(responseArray));
+        cleanResponseArray();
+      }
+    });
+  }
+}
+
+// Leave room
+function onRequestLeaveRoom(param) {
+  const { connectionId, socketKey, username, table_money } = param;
+  if (isValidInput({ connectionId, socketKey })) {
+    dbUtils.LeaveRoomPromise(sequelizeObjects, username, table_money).then(result => {
+      if (players[connectionId].connection !== null) {
+        responseArray.key = "leaveTableResult";
+        responseArray.data = result;
+        // loginedUsers = [...loginedUsers, result];
+        players[connectionId].connection.send(JSON.stringify(responseArray));
+        cleanResponseArray();
+      }
+    }).catch(() => {
+      if (players[connectionId].connection !== null) {
+        responseArray.key = "leaveTableResult";
         responseArray.data = { error: "Database Error" };
         players[connectionId].connection.send(JSON.stringify(responseArray));
         cleanResponseArray();
