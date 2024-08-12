@@ -274,6 +274,41 @@ function SetbalancePromise(sequelizeObjects, username, amount) {
 exports.SetbalancePromise = SetbalancePromise;
 
 /**
+ * Updates user money in the database
+ * @param {Object} sequelizeObjects
+ * @param {String} username
+ * @param {Number} table_money
+ * @returns {Promise<any>}
+ * @constructor
+ */
+function LeaveRoomPromise(sequelizeObjects, username, table_money) {
+  return new Promise(function (resolve, reject) {
+    sequelizeObjects.User.findOne({
+      where: { [Op.or]: [{ name: username }, { email: username }] },
+    })
+      .then((user) => {
+        if (!user) {
+          resolve({ result: false, error: 'User not found' });
+        } else {
+          const currentAmount = user.money;
+          user
+            .update({ money: currentAmount + Number(table_money) })
+            .then(() => {
+              resolve({ result: true });
+            })
+            .catch((error) => {
+              reject(error);
+            });
+        }
+      })
+      .catch((error) => {
+        reject(error);
+      });
+  });
+}
+exports.LeaveRoomPromise = LeaveRoomPromise;
+
+/**
  * Gets user parameters to user object
  * @param {Object} sequelizeObjects
  * @param {Number} playerId
