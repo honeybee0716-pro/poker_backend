@@ -206,6 +206,11 @@ function messageHandler(input) {
     case "chargingAmount":
       chargingAmount(input);
       break;
+    case "twoAllInState":
+      if (isValidInput(input, true)) {
+        rooms[input.roomId].twoAllInState = true;
+      }
+      break;
   }
 }
 

@@ -107,6 +107,7 @@ function Room(holdemType, number, eventEmitter, sequelizeObjects) {
   this.stackCall = 0;
   this.lastWinnerPlayers = []; // Give's double xp if same
   this.collectingPot = false;
+  this.twoAllInState = false;
 }
 
 exports.Room = Room;
@@ -150,6 +151,7 @@ Room.prototype.getRoomInfo = function () {
 Room.prototype.triggerNewGame = function () {
   this.appendPlayers();
 };
+
 
 Room.prototype.appendPlayers = function () {
   let _this = this;
@@ -282,6 +284,7 @@ Room.prototype.setGameType = function () {
 Room.prototype.startGame = function () {
   if (!this.gameStarted) {
     this.gameStarted = true;
+    this.twoAllInState = false;
     logger.log("Game started for room: " + this.roomName);
     this.resetRoomParams();
     this.resetPlayerParameters(); // Reset players (resets dealer param too)
@@ -400,6 +403,38 @@ Room.prototype.staging = function () {
       this.theRiver();
       break;
     case Room.HOLDEM_STAGE_EIGHT_THE_SHOW_DOWN: // Fourth and final betting round
+      
+      if (this.twoAllInState){
+        if (!this.middleCards.length){
+          this.middleCards[0] = this.tempMiddleCards[0];
+          this.middleCards[1] = this.tempMiddleCards[1];
+          this.middleCards[2] = this.tempMiddleCards[2];
+          this.middleCards[3] = this.tempMiddleCards[3];
+          this.middleCards[4] = this.tempMiddleCards[4];
+        } 
+
+        if (this.middleCards.length===3){
+          this.middleCards[3] = this.tempMiddleCards[3];
+          this.middleCards[4] = this.tempMiddleCards[4];
+        } 
+
+        if (this.middleCards.length===4){
+          this.middleCards[4] = this.tempMiddleCards[4];
+        } 
+        
+        let response = { key: "", data: {} };
+        response.key = "allIn";
+        response.data.middleCards = this.middleCards;
+        for (let p = 0; p < this.players.length; p++) {
+          this.sendWebSocketData(p, response);
+        }
+        for (let w = 0; w < this.playersToAppend.length; w++) {
+          this.sendWaitingPlayerWebSocketData(w, response);
+        }
+        for (let s = 0; s < this.spectators.length; s++) {
+          this.sendSpectatorWebSocketData(s, response);
+        }
+     }
       this.currentStatusText = "The show down";
       this.currentTurnText = "";
       this.isCallSituation = false; // Room related reset
@@ -430,7 +465,12 @@ Room.prototype.staging = function () {
 Room.prototype.holeCards = function () {
   console.log('this.sideGameTurn417=>', this.sideGameTurn);
   console.log('this.sideGameType418=>', this.sideGameType);
-  this.currentStage = Room.HOLDEM_STAGE_TWO_PRE_FLOP; // Increment
+  if (this.twoAllInState){
+    this.currentStage = Room.HOLDEM_STAGE_EIGHT_THE_SHOW_DOWN;
+  } else{
+    this.currentStage = Room.HOLDEM_STAGE_TWO_PRE_FLOP; // Increment
+  }
+  
   const _this = this;
 
   if (this.sideGameType === 'twice') {
@@ -497,83 +537,102 @@ Room.prototype.holeCards = function () {
   this.holeCardsGiven = true;
   setTimeout(function () {
     _this.staging();
-  }, 3000);
+  }, 1500);
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 // Show three middle cards
 Room.prototype.theFlop = function () {
-  this.currentStage = Room.HOLDEM_STAGE_FOUR_POST_FLOP; // Increment
+
+  if (this.twoAllInState){
+    this.currentStage = Room.HOLDEM_STAGE_EIGHT_THE_SHOW_DOWN;
+  } else{
+    this.currentStage = Room.HOLDEM_STAGE_FOUR_POST_FLOP; // Increment
+    this.middleCards[0] = this.tempMiddleCards[0];
+    this.middleCards[1] = this.tempMiddleCards[1];
+    this.middleCards[2] = this.tempMiddleCards[2];
+  
+    let response = { key: "", data: {} };
+    response.key = "theFlop";
+    response.data.middleCards = this.middleCards;
+    for (let p = 0; p < this.players.length; p++) {
+      this.sendWebSocketData(p, response);
+    }
+    for (let w = 0; w < this.playersToAppend.length; w++) {
+      this.sendWaitingPlayerWebSocketData(w, response);
+    }
+    for (let s = 0; s < this.spectators.length; s++) {
+      this.sendSpectatorWebSocketData(s, response);
+    }
+  };
   const _this = this;
-  this.middleCards[0] = this.tempMiddleCards[0];
-  this.middleCards[1] = this.tempMiddleCards[1];
-  this.middleCards[2] = this.tempMiddleCards[2];
-  let response = { key: "", data: {} };
-  response.key = "theFlop";
-  response.data.middleCards = this.middleCards;
-  for (let p = 0; p < this.players.length; p++) {
-    this.sendWebSocketData(p, response);
-  }
-  for (let w = 0; w < this.playersToAppend.length; w++) {
-    this.sendWaitingPlayerWebSocketData(w, response);
-  }
-  for (let s = 0; s < this.spectators.length; s++) {
-    this.sendSpectatorWebSocketData(s, response);
-  }
+
   setTimeout(function () {
     _this.staging();
-  }, 3000);
+  }, 1500);
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 // Show fourth card
 Room.prototype.theTurn = function () {
-  this.currentStage = Room.HOLDEM_STAGE_SIX_THE_POST_TURN; // Increment
+  
+  if (this.twoAllInState){
+    this.currentStage = Room.HOLDEM_STAGE_EIGHT_THE_SHOW_DOWN;
+  } else {
+    this.currentStage = Room.HOLDEM_STAGE_SIX_THE_POST_TURN; // Increment
+    this.middleCards[3] = this.tempMiddleCards[3];
+    let response = { key: "", data: {} };
+    response.key = "theTurn";
+    response.data.middleCards = this.middleCards;
+    for (let p = 0; p < this.players.length; p++) {
+      this.sendWebSocketData(p, response);
+    }
+    for (let w = 0; w < this.playersToAppend.length; w++) {
+      this.sendWaitingPlayerWebSocketData(w, response);
+    }
+    for (let s = 0; s < this.spectators.length; s++) {
+      this.sendSpectatorWebSocketData(s, response);
+    }
+  }
   const _this = this;
   // this.middleCards[3] = this.getNextDeckCard();
-  this.middleCards[3] = this.tempMiddleCards[3];
-  let response = { key: "", data: {} };
-  response.key = "theTurn";
-  response.data.middleCards = this.middleCards;
-  for (let p = 0; p < this.players.length; p++) {
-    this.sendWebSocketData(p, response);
-  }
-  for (let w = 0; w < this.playersToAppend.length; w++) {
-    this.sendWaitingPlayerWebSocketData(w, response);
-  }
-  for (let s = 0; s < this.spectators.length; s++) {
-    this.sendSpectatorWebSocketData(s, response);
-  }
+
   setTimeout(function () {
     _this.staging();
-  }, 2000);
+  }, 1500);
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 // Show fifth card
 Room.prototype.theRiver = function () {
-  this.currentStage = Room.HOLDEM_STAGE_EIGHT_THE_SHOW_DOWN; // Increment
+  this.currentStage = Room.HOLDEM_STAGE_EIGHT_THE_SHOW_DOWN; 
+  if (!this.twoAllInState){
+    this.currentStage = Room.HOLDEM_STAGE_EIGHT_THE_SHOW_DOWN; // Increment
+    
+    // this.middleCards[4] = this.getNextDeckCard();
+    this.middleCards[4] = this.tempMiddleCards[4];
+    let response = { key: "", data: {} };
+    response.key = "theRiver";
+    response.data.middleCards = this.middleCards;
+    
+    for (let p = 0; p < this.players.length; p++) {
+      this.sendWebSocketData(p, response);
+    }
+    for (let w = 0; w < this.playersToAppend.length; w++) {
+      this.sendWaitingPlayerWebSocketData(w, response);
+    }
+    for (let s = 0; s < this.spectators.length; s++) {
+      this.sendSpectatorWebSocketData(s, response);
+    }
+  }
   const _this = this;
-  // this.middleCards[4] = this.getNextDeckCard();
-  this.middleCards[4] = this.tempMiddleCards[4];
-  let response = { key: "", data: {} };
-  response.key = "theRiver";
-  response.data.middleCards = this.middleCards;
-  for (let p = 0; p < this.players.length; p++) {
-    this.sendWebSocketData(p, response);
-  }
-  for (let w = 0; w < this.playersToAppend.length; w++) {
-    this.sendWaitingPlayerWebSocketData(w, response);
-  }
-  for (let s = 0; s < this.spectators.length; s++) {
-    this.sendSpectatorWebSocketData(s, response);
-  }
+  
   setTimeout(function () {
     _this.staging();
-  }, 2000);
+  }, 1500);
 };
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -604,7 +663,7 @@ Room.prototype.sendAllPlayersCards = function () {
   }
   setTimeout(function () {
     _this.staging();
-  }, 3000);
+  }, 1500);
 };
 
 Room.prototype.splitFee = function (playerId, amount) {
@@ -941,11 +1000,11 @@ Room.prototype.bettingRound = function (current_player_turn) {
             setTimeout(function () {
               _this.collectingPot = false;
               _this.staging();
-            }, 2500); // Have some time to collect pot and send action
+            }, 1500); // Have some time to collect pot and send action
           } else {
             setTimeout(function () {
               _this.staging(); // No pot to collect, continue without timing
-            }, 5000);
+            }, 2000);
           }
         } else {
           //this.bettingRound(noRoundPlayedPlayer);
